@@ -18,28 +18,52 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   onOpenPersonalize,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const [showStickers, setShowStickers] = useState(true);
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(profile.boyfriendName);
   const [surpriseCount, setSurpriseCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const processImageFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        onUpdateProfile({ heroImageUrl: event.target.result as string });
+        playConfettiPop();
+        confetti({
+          particleCount: 60,
+          spread: 70,
+          origin: { y: 0.6 },
+        });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          onUpdateProfile({ heroImageUrl: event.target.result as string });
-          playConfettiPop();
-          confetti({
-            particleCount: 50,
-            spread: 60,
-            origin: { y: 0.6 },
-          });
-        }
-      };
-      reader.readAsDataURL(file);
+      processImageFile(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      processImageFile(file);
     }
   };
 
@@ -98,11 +122,16 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
           {/* Centerpiece: The Silly Hats Couple Photo Frame */}
           <div
-            className="relative mx-auto max-w-md w-full rounded-2xl p-2.5 bg-gradient-to-tr from-blue-300 via-sky-200 to-indigo-300 shadow-md group mb-7 cursor-pointer"
+            className={`relative mx-auto max-w-md w-full rounded-2xl p-2.5 bg-gradient-to-tr from-blue-300 via-sky-200 to-indigo-300 shadow-md group mb-7 cursor-pointer transition-all ${
+              isDragOver ? 'ring-4 ring-blue-500 scale-102' : ''
+            }`}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
             onClick={launchConfetti}
-            title="Click the photo for celebratory sparkles!"
+            title="Click the photo for celebratory sparkles, or drop your photo file here!"
           >
             <div className="relative overflow-hidden rounded-xl bg-slate-900 aspect-4/3 flex items-center justify-center">
               <img
@@ -124,16 +153,26 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 </>
               )}
 
+              {/* Drag over overlay */}
+              {isDragOver && (
+                <div className="absolute inset-0 bg-blue-600/70 backdrop-blur-xs flex flex-col items-center justify-center text-white z-20 animate-fade-in">
+                  <Upload className="w-8 h-8 mb-2 animate-bounce" />
+                  <p className="font-bold text-sm">Drop your photo here!</p>
+                </div>
+              )}
+
               {/* Hover tap hint overlay */}
-              <div
-                className={`absolute inset-0 bg-blue-950/20 backdrop-blur-[1px] flex items-center justify-center transition-opacity duration-300 pointer-events-none ${
-                  isHovered ? 'opacity-100' : 'opacity-0'
-                }`}
-              >
-                <span className="px-4 py-2 rounded-full bg-white/95 text-blue-700 font-bold text-xs shadow-lg flex items-center gap-1.5 transform scale-95 group-hover:scale-100 transition-transform">
-                  <Sparkles className="w-4 h-4 text-blue-500" /> Tap for Sparkles!
-                </span>
-              </div>
+              {!isDragOver && (
+                <div
+                  className={`absolute inset-0 bg-blue-950/20 backdrop-blur-[1px] flex items-center justify-center transition-opacity duration-300 pointer-events-none ${
+                    isHovered ? 'opacity-100' : 'opacity-0'
+                  }`}
+                >
+                  <span className="px-4 py-2 rounded-full bg-white/95 text-blue-700 font-bold text-xs shadow-lg flex items-center gap-1.5 transform scale-95 group-hover:scale-100 transition-transform">
+                    <Sparkles className="w-4 h-4 text-blue-500" /> Tap for Sparkles!
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Hidden file input for original photo replacement */}
@@ -147,6 +186,18 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
             {/* Quick action badges */}
             <div className="absolute -bottom-3 right-4 flex items-center gap-1.5 z-10">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  fileInputRef.current?.click();
+                }}
+                className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-white/95 hover:bg-white text-slate-700 shadow border border-blue-200 flex items-center gap-1 transition-colors"
+                title="Select your photo (e.g. IMG_20260819_195545_237.jpg)"
+              >
+                <Camera className="w-3 h-3 text-blue-600" />
+                Change Photo
+              </button>
               <button
                 type="button"
                 onClick={(e) => {
@@ -166,9 +217,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   onOpenPersonalize();
                 }}
                 className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-white/95 hover:bg-white text-slate-700 shadow border border-blue-200 flex items-center gap-1 transition-colors"
-                title="Change photo or text"
+                title="Edit message and details"
               >
-                <Camera className="w-3 h-3 text-indigo-500" />
                 Edit
               </button>
             </div>
