@@ -1,0 +1,6 @@
+{
+  "name": "Happy Birthday Pogi - Interactive Greeting",
+  "description": "An interactive, heartfelt blue-themed birthday celebration website for Pogi from Aldie with their silly-hat memories, blowable virtual candles, custom wishes, and romantic keepsakes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
